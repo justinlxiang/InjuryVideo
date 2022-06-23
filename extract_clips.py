@@ -39,7 +39,7 @@ def local_clip(yt, start_time, duration, output_filename):
     command = ['/Users/juxiang/opt/anaconda3/bin/youtube-dl',#'youtube-dl',
                #               '--quiet', '--no-warnings',
                '-f', 'bestvideo[ext=mp4]',
-            #    '-o', '"%s"' % output,
+         #    '-o', '"%s"' % output,
                '-g', '"%s"' % (url_base + yt)] 
                 # + '?start=' + str(start) + '&end=' + str(end))
     command = ' '.join(command)
