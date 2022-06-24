@@ -1,0 +1,4 @@
+scp -i "/Users/juxiang/Dropbox/Mac/Downloads/JXpair.pem" -r '/Users/juxiang/Documents/InjuryVideo/' ec2-user@ec2-54-174-85-137.compute-1.amazonaws.com:'/home/ec2-user/InjuryProject/'
+ssh -i "/Users/juxiang/Dropbox/Mac/Downloads/JXpair.pem" ec2-user@ec2-34-234-92-211.compute-1.amazonaws.com
+
+

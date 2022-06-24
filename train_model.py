@@ -218,8 +218,8 @@ def val_step(model, gpu, dataloader, epoch):
 
 if __name__ == '__main__':
 
-    print args.name
-    print args.k
+    print(args.name)
+    print(args.k)
 
     dataloaders, datasets = load_data(args.name, args.name2, args.k)
 

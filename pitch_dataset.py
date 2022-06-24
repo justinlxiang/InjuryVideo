@@ -43,12 +43,16 @@ def make_dataset(pitcher_name='Aaron Nola', k=20):
 
 class Pitcher(data_utl.Dataset):
 
-    def __init__(self, name, k, sub=0.8):
+    # def __init__(self, name, k, sub=0.8):
+    def __init__(self, name, k, sub=0.05):
+
         
         self.data = make_dataset(name, k)
         random.shuffle(self.data)
         self.train = self.data[:int(len(self.data)*sub)]
-        self.val = self.data[int(len(self.data)*sub):]
+        # self.val = self.data[int(len(self.data)*sub):]
+        self.val = self.data[int(len(self.data)*sub):int(len(self.data)*sub)*2:]
+
         self.root = '/Users/juxiang/Documents/InjuryVideo/RBG/'
         self.in_mem = {}
         self.mode = 'train'

@@ -9,7 +9,7 @@ parser.add_argument('-gpu', type=str)
 parser.add_argument('-save_dir', type=str)
 
 args = parser.parse_args()
-# os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
+#os.environ["CUDA_VISIBLE_DEVICES"]=args.gpu
 
 import torch
 torch.backends.cudnn.benchmark=True
@@ -56,7 +56,7 @@ for v in p:
                           
     df = np.reshape(df, newshape=(num_frames, h, w, 3))
     print(df.shape)
-    exit()
+    # exit()
 
     dfi = 2*(df.astype(np.float32)/255)-1
 
