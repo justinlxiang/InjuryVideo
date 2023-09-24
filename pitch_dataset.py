@@ -30,7 +30,10 @@ def video_to_tensor(pic):
 
 def make_dataset(pitcher_name='Aaron Nola', k=20):
     #dataset = get_subsets.last_k_as_injured(get_subsets.get_by_pitcher(pitcher_name), k)
-    dataset = get_subsets.last_k_as_injured(get_subsets.get_by_arm(pitcher_name), k)
+    # dataset = get_subsets.last_k_as_injured(get_subsets.get_by_arm(pitcher_name), k)
+    
+    dataset = get_subsets.last_k_as_injured(get_subsets.get_by_key_val('clip_name'), k)
+
     tot = healthy = inj = 0.
     for p in dataset:
         tot += 1
@@ -44,16 +47,15 @@ def make_dataset(pitcher_name='Aaron Nola', k=20):
 class Pitcher(data_utl.Dataset):
 
     # def __init__(self, name, k, sub=0.8):
-    def __init__(self, name, k, sub=0.05):
-
-        
+    def __init__(self, name, k, sub=.8):
         self.data = make_dataset(name, k)
+
         random.shuffle(self.data)
         self.train = self.data[:int(len(self.data)*sub)]
         # self.val = self.data[int(len(self.data)*sub):]
-        self.val = self.data[int(len(self.data)*sub):int(len(self.data)*sub)*2:]
+        self.val = self.data[int(len(self.data)*sub):]
 
-        self.root = '/Users/juxiang/Documents/InjuryVideo/RBG/'
+        self.root = '/home/ec2-user/InjuryVideo/RGB/'
         self.in_mem = {}
         self.mode = 'train'
         
@@ -74,7 +76,7 @@ class Pitcher(data_utl.Dataset):
         else:
             feat = np.load(os.path.join(self.root, entry['clip_name']+'.npy'))
             feat = feat.astype(np.float32)
-            self.in_mem[entry['clip_name']] = feat
+            # self.in_mem[entry['clip_name']] = feat
             
         label = entry['inj']
         return video_to_tensor(feat), label, entry['clip_name']

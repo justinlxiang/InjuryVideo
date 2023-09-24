@@ -22,15 +22,16 @@ from torch.autograd import Variable
 
 import torchvision
 from torchvision import datasets, transforms
-
+import pandas as pd
 
 import numpy as np
 import json
 
 import models
+from numpy import asarray
+from numpy import savetxt
 
-
-batch_size = 32
+batch_size = 8
 from pitch_dataset import Pitcher
 classes = 1
 
@@ -38,15 +39,15 @@ def sigmoid(x):
     return 1/(1+np.exp(-x))
 
 def load_data(name, name2, k):
-    dataset = Pitcher(name, k, sub=1)
+    dataset = Pitcher(name, k, sub=.8)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
-    
-    val_dataset = Pitcher(name,k, sub=1)
+
+    val_dataset = Pitcher(name,k, sub=.8)
     val_dataset.mode = 'val'
     val_dataset.val = dataset.val
     val_dataset.train = dataset.train
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=1, pin_memory=True)
-
+    
     dataloaders = {'train': dataloader, 'val': val_dataloader}
     datasets = {'train': dataset, 'val': val_dataset}
     return dataloaders, datasets
@@ -55,23 +56,38 @@ def load_data(name, name2, k):
 # train the model
 def run(models, num_epochs=50):
     since = time.time()
-
+    #df = pd.DataFrame()
+    #df2 = pd.DataFrame()
     best_loss = 10000
+
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
 
-        probs = []
+        #probs = []
+        #clipNames = []
         for model, gpu, dataloader, optimizer, sched, model_file in models:
             train_step(model, gpu, optimizer, dataloader['train'], epoch)
             #if epoch % 5 == 0:
-            prob_val, val_loss = val_step(model, gpu, dataloader['val'], epoch)
-            probs.append(prob_val)
-            sched.step(val_loss)
 
+
+
+            prob_val, val_loss, clipnames = val_step(model, gpu, dataloader['val'], epoch)
+            #probs = prob_val
+            #clipNames = clipnames
+            print(clipnames)
+            print(prob_val)
+            sched.step(val_loss)
+            
             if False and val_loss < best_loss:
                 best_loss = val_loss
                 torch.save(model.state_dict(), 'models/'+model_file)
+        
+        #df.append(probs)
+        #df2.append(clipNames)
+        #df.to_csv('/home/ec2-user/InjuryVideo/pitchers-master/valOutput.csv')
+        #df2.to_csv('/home/ec2-user/InjuryVideo/pitchers-master/valOutputclipNames.csv')
+
 
 def eval_model(model, dataloader, baseline=False):
     results = {}
@@ -93,6 +109,10 @@ def run_network(model, data, gpu, epoch, val=False, baseline=True):
 
     # forward
     outputs = model(inputs)
+
+    # print(inputs.shape)
+    # print(outputs.shape)
+    # print(labels.shape)
     
     # binary action-prediction loss
     loss = F.binary_cross_entropy_with_logits(outputs, labels)
@@ -131,24 +151,28 @@ def train_step(model, gpu, optimizer, dataloader, epoch):
     pneg = 0.
     tp = tn = fp = fn = 0.
     
+    count = 1
+
     # Iterate over data.
     for data in dataloader:
+        # if(count % 100 ==0):
+        count += 1
         optimizer.zero_grad()
         num_iter += 1
         
         outputs, loss, probs, err, stats = run_network(model, data, gpu, epoch)
         
-        error += err.data[0]
-        pos += stats[0].data[0]
-        neg += stats[1].data[0]
-        tp += stats[2].data[0]
-        fp += stats[3].data[0]
-        tn += stats[4].data[0]
-        fn += stats[5].data[0]
-        ppos += stats[6].data[0]
-        pneg += stats[7].data[0]
+        error += err.item()
+        pos += stats[0].item()
+        neg += stats[1].item()
+        tp += stats[2].item()
+        fp += stats[3].item()
+        tn += stats[4].item()
+        fn += stats[5].item()
+        ppos += stats[6].item()
+        pneg += stats[7].item()
         
-        tot_loss += loss.data[0]
+        tot_loss += loss.item()
         loss.backward()
         optimizer.step()
     epoch_loss = tot_loss / num_iter
@@ -174,8 +198,9 @@ def val_step(model, gpu, dataloader, epoch):
     tp = tn = fp = fn =0.
     
 
-    full_probs = {}
-
+    full_probs = []
+    clipNames = []
+    
 
     # Iterate over data.
     for data in dataloader:
@@ -184,22 +209,23 @@ def val_step(model, gpu, dataloader, epoch):
         
         outputs, loss, probs, err, stats = run_network(model, data, gpu, epoch, val=True)
                 
-        error += err.data[0]
-        tot_loss += loss.data[0]
-        pos += stats[0].data[0]
-        neg += stats[1].data[0]
-        tp += stats[2].data[0]
-        fp += stats[3].data[0]
-        tn += stats[4].data[0]
-        fn += stats[5].data[0]
-        ppos += stats[6].data[0]
-        pneg += stats[7].data[0]
+        error += err.item()
+        tot_loss += loss.item()
+        pos += stats[0].item()
+        neg += stats[1].item()
+        tp += stats[2].item()
+        fp += stats[3].item()
+        tn += stats[4].item()
+        fn += stats[5].item()
+        ppos += stats[6].item()
+        pneg += stats[7].item()
                                                                         
-        
+       
         # post-process preds
         outputs = outputs.squeeze()
         probs = probs.squeeze()
-        full_probs[other[0][0]] = (probs.data.cpu().numpy().T, 0)
+        full_probs.append(probs.data.cpu().numpy().T)
+        clipNames.append(other)
         
         
     epoch_loss = tot_loss / num_iter
@@ -213,7 +239,7 @@ def val_step(model, gpu, dataloader, epoch):
     print('F1:', 1/((0.5*((1/rec)+(1/prec)))+1e-6))
     
                             
-    return full_probs, epoch_loss
+    return full_probs, epoch_loss, clipNames
 
 
 if __name__ == '__main__':
@@ -228,5 +254,36 @@ if __name__ == '__main__':
     lr = 0.1
     optimizer = optim.Adam(model.parameters(), lr=lr)
     lr_sched = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, verbose=True)
-        
+    
+
+    print("RUNNING")
     run([(model,0,dataloaders,optimizer, lr_sched, args.model_file)], num_epochs=100)
+
+
+    trainClips = []
+    trainLabels = []
+    testClips = []
+    testLabels = []
+    count = 0
+    for data in dataloaders['train'].dataset:
+        label = data[1]
+        clip = data[2]
+        trainClips.append(clip)
+        trainLabels.append(label)
+        count += 1
+        print(str(count) + " " + str(clip) + " " + str(label))
+    for data in dataloaders['val'].dataset:
+        label = data[1]
+        clip = data[2]
+        testClips.append(clip)
+        testLabels.append(label)
+
+    print("SAVING")
+    trainClips = pd.DataFrame(trainClips)
+    trainClips.to_csv('/home/ec2-user/InjuryVideo/SplitInfo/trainClips.csv')
+    trainLabels = pd.DataFrame(trainLabels)
+    trainLabels.to_csv('/home/ec2-user/InjuryVideo/SplitInfo/trainLabels.csv')
+    testClips = pd.DataFrame(testClips)
+    testClips.to_csv('/home/ec2-user/InjuryVideo/SplitInfo/testClips.csv')
+    testLabels = pd.DataFrame(testLabels)
+    testLabels.to_csv('/home/ec2-user/InjuryVideo/SplitInfo/testLabels.csv')

@@ -60,16 +60,17 @@ def local_clip(yt, start_time, duration, output_filename):
     command2 = ['/Users/juxiang/opt/anaconda3/bin/ffmpeg',
                '-ss', str(start_time),
                '-i', '"%s"' % actual_url,
+               '-filter:v "crop='+crop+'"',
                '-t', str(end_time - start_time),
-               '-c copy', '/Users/juxiang/Documents/InjuryVideo/Data/%s' % (output_filename),
+               '-c:a copy', '/Users/juxiang/Documents/InjuryVideo/DataCropped/%s' % (output_filename),
                #'-c:v', 'copy',
                '-an',
-               '-filter:v "crop='+crop+'"',#600:460:300:190"',
+               #600:460:300:190"',
                '-threads', '1',
                '-loglevel', 'panic']
     command2 = ' '.join(command2)
 
-    # print(command2)
+    print(command2)
     os.system(command2)
 
     try:
@@ -82,7 +83,7 @@ def local_clip(yt, start_time, duration, output_filename):
 
                                                                     
 def wrapper(pitch):
-    if not os.path.exists('/Users/juxiang/Documents/InjuryVideo/Data/'+pitch['clip_name']+'.mp4'):
+    if not os.path.exists('/Users/juxiang/Documents/InjuryVideo/DataCropped/'+pitch['clip_name']+'.mp4'):
         local_clip(pitch['yt'], pitch['start'], pitch['duration'], pitch['clip_name']+'.mp4')
         return 0
 

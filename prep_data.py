@@ -1,15 +1,15 @@
 import os
 import sys
 import json
-import urllib2
+import urllib
 import random
 import string
-import pandas
+import pandas as pd
 
 import xmltodict
 import datetime
 
-inj_data = pandas.read_csv('pitcher_injury_data_v1.csv')
+inj_data = pd.read_csv('pitcher_injury_data_v1.csv')
 #Index([u'Name', u'first', u'last', u'season', u'team', u'position', u'start',
 #              u'end', u'days', u'location', u'type', u'side', u'Injury ID',
 #              u'FG Teamid', u'FG playerid', u'mlbamid', u'Game Hurt', u'XML',
@@ -21,7 +21,7 @@ inj_data = pandas.read_csv('pitcher_injury_data_v1.csv')
 def proc_game(url, first_pitch):
     FMT = '%Y-%m-%dT%H:%M:%S'
     duration = 10
-    f = urllib2.urlopen(url+'players.xml')
+    f = urllib.request.urlopen(url+'players.xml')
     xml = f.read()
     f.close()
     data = xmltodict.parse(xml)
@@ -34,7 +34,7 @@ def proc_game(url, first_pitch):
             rev_pid[player['@id']] = player['@first']+' '+player['@last']
 
         
-    f = urllib2.urlopen(url+'inning/inning_all.xml')
+    f = urllib.request.urlopen(url+'inning/inning_all.xml')
     xml = f.read()
     f.close()
     pitch_data = xmltodict.parse(xml)
@@ -78,11 +78,11 @@ def proc_game(url, first_pitch):
             p2 = st[:-1]#.split('T')[1]
             td = datetime.datetime.strptime(p2, FMT) - datetime.datetime.strptime(gst, FMT)
             if len(game_data) == 0:
-                print td.total_seconds(), start_time
+                print(td.total_seconds(), start_time)
             start_s = td.total_seconds() + start_time
             if last_pitch != 0:
                 if start_s - last_pitch < 8:
-                    print 'gmm'
+                    print('gmm')
             last_pitch = start_s
             p = {'start': start_s, 'duration': duration}
             #print p
@@ -116,7 +116,7 @@ def proc_game(url, first_pitch):
                 inn = 'top'
                 inning_i += 1
                 if inning_i >= len(pitch_data['game']['inning']):
-                    print 'Done?'
+                    print('Done?')
                     break
                 
     f = {'game_data':game_data, 'players':player_ids, 'rev_pid':rev_pid}
